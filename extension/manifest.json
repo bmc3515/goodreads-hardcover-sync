@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Hardcover Kindle Sync",
+  "version": "1.0",
+  "description": "Sync your Goodreads 'Read' shelf to Hardcover.app automatically.",
+  "permissions": [
+    "storage",
+    "scripting",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.goodreads.com/*",
+    "https://hardcover.app/*",
+    "https://api.hardcover.app/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

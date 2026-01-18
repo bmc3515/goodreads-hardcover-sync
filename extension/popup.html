@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Hardcover Sync</title>
+  <style>
+    body {
+      width: 350px;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans_serif;
+      padding: 16px;
+      background-color: #f9fafb;
+      color: #1f2937;
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0 0 16px 0;
+      color: #111827;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card {
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .status-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .status-item:last-child {
+      margin-bottom: 0;
+    }
+    .status-label {
+      color: #6b7280;
+    }
+    .status-value {
+      font-weight: 500;
+      color: #374151;
+    }
+    .status-value.connected {
+      color: #059669;
+    }
+    .status-value.disconnected {
+      color: #d97706;
+    }
+    .status-value.error {
+      color: #dc2626;
+    }
+    
+    button {
+      width: 100%;
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    button:disabled {
+      background-color: #9ca3af;
+      cursor: not-allowed;
+    }
+
+    #log-container {
+      margin-top: 16px;
+      border: 1px solid #e5e7eb;
+      background: #1f2937;
+      color: #e5e7eb;
+      border-radius: 6px;
+      height: 200px;
+      overflow-y: auto;
+      padding: 8px;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      font-size: 11px;
+      white-space: pre-wrap;
+    }
+    .log-info { color: #e5e7eb; }
+    .log-success { color: #34d399; }
+    .log-warn { color: #fcd34d; }
+    .log-error { color: #f87171; }
+    .log-debug { color: #9ca3af; }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm2-2v12h12V4H6zm2 4h8v2H8V8zm0 4h8v2H8v-2z"/> 
+    </svg>
+    Hardcover Sync
+  </h1>
+
+  <div class="card">
+    <div class="status-item">
+      <span class="status-label">Goodreads RSS</span>
+      <span class="status-value disconnected" id="status-goodreads">Checking...</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Hardcover Token</span>
+      <span class="status-value disconnected" id="status-hardcover">Checking...</span>
+    </div>
+  </div>
+
+  <button id="btn-sync" disabled>Sync Now</button>
+  
+  <div id="log-container"></div>
+
+  <script src="utils.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
