@@ -30,6 +30,24 @@ GOODREADS_RSS_URL="https://www.goodreads.com/review/list_rss/..."
 HARDCOVER_API_TOKEN="your_hardcover_bearer_token"
 ```
 
+#### How to find your credentials:
+**1. Goodreads RSS URL ("Read" Shelf):**
+- Go to your [My Books](https://www.goodreads.com/review/list) page on Goodreads.
+- Click on the **"Read"** shelf in the left sidebar.
+- Scroll to the very bottom of the page.
+- Look for the tiny **RSS** icon/link (usually on the bottom right).
+- Right-click and **Copy Link Address**.
+
+**2. Hardcover API Token:**
+- Go to [Hardcover.app](https://hardcover.app) and log in.
+- Open the Developer Tools (F12 or Right Click > Inspect).
+- Go to the **Network** tab.
+- Refresh the page or click a link (e.g., your Profile).
+- Look for a request to `graphql` (or any API request).
+- Click the request and view the **Headers** tab.
+- Look for `Authorization: Bearer eyJ...`.
+- Copy the long string starting with `eyJ...` (exclude "Bearer " if your `.env` logic handles it, but the script is smart enough to handle it either way).
+
 ### 3. Usage
 Run the script manually to sync your books.
 
