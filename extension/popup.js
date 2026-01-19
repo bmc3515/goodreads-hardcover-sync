@@ -140,7 +140,7 @@ async function discoverGoodreadsRSS() {
 
 // --- Sync Logic (Ported from sync.py) ---
 
-async function graphqlQuery(query, variables) {
+async function graphqlQuery(query, variables, retryCount = 0) {
     const authHeader = HC_TOKEN.startsWith("Bearer ") ? HC_TOKEN : `Bearer ${HC_TOKEN}`;
     const res = await fetch(HC_ENDPOINT, {
         method: 'POST',
@@ -151,7 +151,19 @@ async function graphqlQuery(query, variables) {
         body: JSON.stringify({ query, variables })
     });
     
-    if (!res.ok) throw new Error(`API Error: ${res.statusText}`);
+    if (!res.ok) {
+        // Handle Token Expiration (401)
+        if (res.status === 401 && retryCount < 1) {
+            Utils.log("Token expired. Refreshing from website...", "warn");
+            await discoverHardcoverToken();
+            if (HC_TOKEN) {
+                 return graphqlQuery(query, variables, retryCount + 1);
+            }
+        }
+
+        const text = await res.text();
+        throw new Error(`API Error ${res.status}: ${res.statusText} \nDetails: ${text.substring(0, 100)}`);
+    }
     const json = await res.json();
     if (json.errors) throw new Error(`GraphQL Error: ${JSON.stringify(json.errors)}`);
     return json;
