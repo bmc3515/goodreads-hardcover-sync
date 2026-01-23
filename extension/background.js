@@ -28,11 +28,12 @@ async function checkAndNotify(tabId) {
     
     // 1. Credentials
     await loadCredentials();
-    if (!HC_TOKEN) await discoverHardcoverToken(); // Try to scrape if we are on the site? 
-    // Actually, scraping token is tricky from background unless we inject a script.
-    // For V2, let's rely on the user having set it up once via popup or we can inject credential scraper.
-    // Simpler: assume credentials exist for the proactive check.
-    if (!HC_TOKEN || !RSS_URL) return; 
+    console.log(`Credentials Loaded? Token: ${!!HC_TOKEN}, RSS: ${!!RSS_URL}`);
+    
+    if (!HC_TOKEN || !RSS_URL) {
+        console.warn("Credentials missing in background. Can't sync.");
+        return; 
+    } 
 
     // 2. Dry Run Check
     console.log("Starting Dry Run...");
