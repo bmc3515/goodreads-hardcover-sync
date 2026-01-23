@@ -48,16 +48,25 @@ export const Utils = {
         return matrix[b.length][a.length];
     },
 
-    // XML Parser for RSS
+    // XML Parser for RSS (Service Worker Compatible - Regex)
     parseRSS: (xmlText) => {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xmlText, "text/xml");
-        const items = xmlDoc.querySelectorAll("item");
+        // DOMParser is not available in Service Workers. 
+        // We use a simple regex parser since the structure is known.
+        
         const entries = [];
-
-        items.forEach(item => {
-            const getTag = (tag) => item.getElementsByTagName(tag)[0]?.textContent;
+        // Match <item>...</item> blocks
+        const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+        let itemMatch;
+        
+        while ((itemMatch = itemRegex.exec(xmlText)) !== null) {
+            const itemContent = itemMatch[1];
             
+            const getTag = (tag) => {
+                const tagRegex = new RegExp(`<${tag}.*?>([\\s\\S]*?)<\/${tag}>`);
+                const match = tagRegex.exec(itemContent);
+                return match ? match[1].replace(/<!\[CDATA\[(.*?)\]\]>/g, '$1').trim() : null;
+            };
+
             entries.push({
                 title: getTag("title"),
                 author_name: getTag("author_name"),
@@ -66,9 +75,9 @@ export const Utils = {
                 user_rating: getTag("user_rating"),
                 user_read_at: getTag("user_read_at"),
                 user_date_added: getTag("user_date_added"),
-                book_id: getTag("book_id") // Goodread ID
+                book_id: getTag("book_id")
             });
-        });
+        }
         return entries;
     },
 
