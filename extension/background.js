@@ -134,10 +134,9 @@ async function runSync(tabId, isDryRun) {
             if (!bookId) {
                 console.log(`[No Match] Could not find '${entry.title}' in Hardcover.`);
                 if (isDryRun) {
-                    // If we can't find it, we count it as "New/Unknown" so the user is alerted to the issue?
-                    // Or do we assume if it's not in Hardcover we can't sync it anyway?
-                    // Let's count it to be safe, so the user sees the modal and tries to sync, then gets the "No match" log.
-                    newBooksFound++; 
+                    // Do NOT count unmatchable books. 
+                    // If we can't add them, we shouldn't notify.
+                    // newBooksFound++; 
                 } else if (tabId) {
                     chrome.tabs.sendMessage(tabId, { action: 'UPDATE_LOG', message: `⚠️ No match: ${entry.title}`, type: 'warn' });
                 }
