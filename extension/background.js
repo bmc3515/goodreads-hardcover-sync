@@ -76,6 +76,8 @@ async function discoverHardcoverToken() {
 
 // --- Sync Engine (Refactored for Background) ---
 // Returns number of new books found (Dry Run) OR runs the add logic
+// --- Sync Engine (Refactored for Background) ---
+// Returns number of new books found (Dry Run) OR runs the add logic
 async function runSync(tabId, isDryRun) {
     try {
         // 1. Fetch RSS
@@ -95,100 +97,82 @@ async function runSync(tabId, isDryRun) {
         console.log(`Processing ${processList.length} recent books from RSS...`);
         
         for (const entry of processList) {
-            // Cache Checks
+            // --- A. First Pass: Cache Check ---
             if (entry.isbn13 && existingIsbns.has(entry.isbn13)) {
-                console.log(`[DryRun] Skipped '${entry.title}' (ISBN Cache Hit)`);
+                console.log(`[Skip] '${entry.title}' (ISBN Cache Hit)`);
                 continue;
             }
             if (existingTitles.has(entry.title.trim().toLowerCase())) {
-                 console.log(`[DryRun] Skipped '${entry.title}' (Title Cache Hit)`);
+                 console.log(`[Skip] '${entry.title}' (Title Cache Hit)`);
                  continue;
             }
 
-            // Fuzzy Title Check (Avoid False Positives in Notification)
+            // Fuzzy Check
             let isFuzzyMatch = false;
             for (const existingTitle of existingTitles) {
                 if (Utils.tokenSortRatio(entry.title, existingTitle) > 90) {
-                    console.log(`[DryRun] Skipped '${entry.title}' (Fuzzy Cache Hit: '${existingTitle}')`);
+                    console.log(`[Skip] '${entry.title}' (Fuzzy Cache Hit: '${existingTitle}')`);
                     isFuzzyMatch = true;
                     break;
                 }
             }
             if (isFuzzyMatch) continue;
 
-            // It's a candidate!
-            console.log(`[DryRun] Candidate Found: '${entry.title}' - Verifying via API...`);
-            
-            // Verify with Full Search Logic (The Truth)
-            // This ensures we catch books that exist but have different titles (e.g. "Doorman" vs "The Doorman: A Novel")
-            // matching the robustness of the Python script.
-            try {
-                const bookId = await searchHardcoverBookId(entry.title, entry.author_name, entry.isbn13 || entry.isbn);
-                
-                if (bookId) {
-                    if (bookIds.has(bookId)) {
-                        console.log(`[DryRun] False Positive: '${entry.title}' resolved to ID ${bookId}, which is already in library.`);
-                        continue;
-                    } else {
-                         console.log(`[DryRun] Verified New Book: '${entry.title}' (ID: ${bookId})`);
-                         if (isDryRun) {
-                             newBooksFound++;
-                             continue;
-                         }
-                    }
-                } else {
-                    console.log(`[DryRun] No Match Found in Hardcover for '${entry.title}'`);
-                    // If no match in Hardcover, we still show the modal? 
-                    // No, simpler to not show modal if we can't add it anyway?
-                    // Actually, if we can't find it, we usually warn. 
-                    // But for "New Books Notification", we should probably count it so the user can verify.
-                    // Let's count it, so the user sees "Found new books" and then sees the warning in the list.
-                    if (isDryRun) newBooksFound++;
-                    continue; // Skip the "Real Run" logic below needed if we weren't just counting
-                }
-            } catch (e) {
-                console.error("Search Error during DryRun:", e);
+            // --- B. Second Pass: API Verification ---
+            console.log(`[Candidate] '${entry.title}' - Verifying via API...`);
+            if (tabId && !isDryRun) {
+                 chrome.tabs.sendMessage(tabId, { action: 'UPDATE_LOG', message: `Found candidate: ${entry.title}...`, type: 'info' });
             }
 
-            if (isDryRun) continue; // Should not reach here due to continue above, but safety.
+            let bookId = null;
+            try {
+                bookId = await searchHardcoverBookId(entry.title, entry.author_name, entry.isbn13 || entry.isbn);
+            } catch (e) {
+                console.error("Search Error:", e);
+            }
 
-            // --- REAL RUN (Only reached if !isDryRun and book detected/verified above) ---
-            // Note: In real run, we already did the search above. We can just reuse bookId relative to scope
-            // But scoping is tricky here with the continue blocks. 
-            // Let's restructure: The Loop needs to handle both Dry and Real cleanly.
-            // ... Actually, the code above handles Dry Run. If !isDryRun, we proceed to "Add".
-            // But we just did the search! We shouldn't do it again.
-            
-            // Refactoring Loop for efficiency:
-            
-            /* 
-             * REFACTORED FLOW:
-             * 1. Check Cache (ISBN/Title) -> Continue if hit.
-             * 2. Search API -> Get ID.
-             * 3. Check ID against Library. -> Continue if hit.
-             * 4. IF DryRun -> newBooksFound++, Continue.
-             * 5. IF RealRun -> Add Book.
-             */
-             
-             // We need to break the loop flow to allow this shared logic.
-             // Since I can't refactor the whole function in this block easily, 
-             // I will implement the logic cleanly below.
-             
-             // (See Replacement Content)
+            if (!bookId) {
+                console.log(`[No Match] Could not find '${entry.title}' in Hardcover.`);
+                if (isDryRun) {
+                    // If we can't find it, we count it as "New/Unknown" so the user is alerted to the issue?
+                    // Or do we assume if it's not in Hardcover we can't sync it anyway?
+                    // Let's count it to be safe, so the user sees the modal and tries to sync, then gets the "No match" log.
+                    newBooksFound++; 
+                } else if (tabId) {
+                    chrome.tabs.sendMessage(tabId, { action: 'UPDATE_LOG', message: `⚠️ No match: ${entry.title}`, type: 'warn' });
+                }
+                continue;
+            }
 
-                if (userBookId) {
-                     bookIds.add(bookId);
-                     if (tabId) chrome.tabs.sendMessage(tabId, { action: 'UPDATE_LOG', message: `✅ Added: ${entry.title}`, type: 'success' });
-                     // Handle Date
-                     if (entry.user_read_at) {
-                         const d = new Date(entry.user_read_at);
-                         if (!isNaN(d)) {
-                              await addReadDate(userBookId, d.toISOString().split('T')[0]);
-                         }
-                     }
+            // --- C. Third Pass: ID Check (The Truth) ---
+            if (bookIds.has(bookId)) {
+                console.log(`[False Positive] '${entry.title}' resolved to ID ${bookId}, which is already in library.`);
+                continue;
+            }
+
+            // --- D. Action ---
+            console.log(`[Verified New] '${entry.title}' (ID: ${bookId})`);
+            
+            if (isDryRun) {
+                newBooksFound++;
+                continue;
+            }
+
+            // REAL RUN: Add it
+            const userBookId = await addBookToHardcover(bookId, entry.user_rating, entry.user_read_at);
+            if (userBookId) {
+                bookIds.add(bookId); // Update local set
+                if (tabId) chrome.tabs.sendMessage(tabId, { action: 'UPDATE_LOG', message: `✅ Added: ${entry.title}`, type: 'success' });
+                
+                // Handle Date
+                if (entry.user_read_at) {
+                    const d = new Date(entry.user_read_at);
+                    if (!isNaN(d)) {
+                        await addReadDate(userBookId, d.toISOString().split('T')[0]);
+                    }
                 }
             } else {
-                 if (tabId) chrome.tabs.sendMessage(tabId, { action: 'UPDATE_LOG', message: `⚠️ No match: ${entry.title}`, type: 'warn' });
+                 if (tabId) chrome.tabs.sendMessage(tabId, { action: 'UPDATE_LOG', message: `❌ Failed to add: ${entry.title}`, type: 'error' });
             }
         }
         
