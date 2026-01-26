@@ -1,6 +1,6 @@
 # Goodreads to Hardcover Sync
 
-A "set it and forget it" tool to sync Kindle reads to Hardcover.app automatically.
+Three tools to sync Kindle reads to Hardcover.app via Goodreads, automatically, or manually.
 
 ## How it works
 1. **Kindle** automatically updates your **Goodreads** "Read" shelf.
@@ -16,7 +16,7 @@ A "set it and forget it" tool to sync Kindle reads to Hardcover.app automaticall
 
 ---
 
-## Option 1: Chrome Extension (Recommended)
+## Option 1: Chrome Extension
 
 The easiest way to use this tool is via the included Chrome Extension. It requires **Zero Config** because it automatically detects your credentials if you are logged into Goodreads and Hardcover in your browser.
 
