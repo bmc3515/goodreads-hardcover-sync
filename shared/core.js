@@ -378,7 +378,7 @@ export class SyncEngine {
 
     async addBookToHardcover(bookId, rating, readAt) {
         const mutation = `mutation AddUserBook($book_id: Int!, $rating: numeric) { insert_user_book(object: { book_id: $book_id, status_id: 3, rating: $rating }) { id error } }`;
-        const res = await this.graphqlQuery(mutation, { book_id: bookId, rating: rating ? parseInt(rating) : null });
+        const res = await this.graphqlQuery(mutation, { book_id: bookId, rating: (rating && parseInt(rating) > 0) ? parseInt(rating) : null });
         
         const data = res.data.insert_user_book;
         if (data && data.error) {
